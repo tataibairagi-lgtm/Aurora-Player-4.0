@@ -1,0 +1,30 @@
+name: Build APK
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: unzip -q Aurora.zip
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Android SDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0" || true
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7
+      - name: Build release (fast) and debug (fallback)
+        run: gradle assembleRelease assembleDebug --no-daemon
+        working-directory: Aurora
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Aurora-release-apk
+          path: Aurora/app/build/outputs/apk/release/*.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Aurora-debug-apk
+          path: Aurora/app/build/outputs/apk/debug/*.apk
